@@ -70,7 +70,7 @@
     </v-row>
 
     <!-- Metas -->
-    <v-row class="mb-2">
+    <!-- <v-row class="mb-2">
       <v-col cols="12" sm="6">
         <v-card color="surface" class="pa-4">
           <p class="text-subtitle-2 text-medium-emphasis mb-2">
@@ -116,7 +116,7 @@
           />
         </v-card>
       </v-col>
-    </v-row>
+    </v-row> -->
 
     <!-- Gráficos -->
     <v-row>
