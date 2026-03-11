@@ -55,6 +55,7 @@
         :no-data-text="'Nenhuma sessão encontrada'"
         :items-per-page-text="'Itens por página'"
         class="bg-surface"
+        :mobile="smAndDown"
       >
         <!-- Coluna Data -->
         <template #item.date="{ item }">
@@ -77,7 +78,7 @@
 
         <!-- Coluna Desempenho -->
         <template #item.score="{ item }">
-          <div class="d-flex align-center ga-2">
+          <div class="ga-2">
             <span class="text-success font-weight-bold">{{ item.correctQuestions }}</span>
             <span class="text-medium-emphasis">/</span>
             <span>{{ item.totalQuestions }}</span>
@@ -106,7 +107,7 @@
 
         <!-- Coluna Ações -->
         <template #item.actions="{ item }">
-          <div class="d-flex ga-1">
+          <div class="ga-1">
             <v-btn
               :icon="mdiPencilOutline"
               size="small"
@@ -208,7 +209,7 @@
     </v-dialog>
 
     <!-- Snackbar -->
-    <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="3000" location="bottom end">
+    <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="3000" location="bottom center">
       <v-icon class="mr-2" :icon="snackbarIcon" />
       {{ snackbarMsg }}
     </v-snackbar>
@@ -240,6 +241,9 @@ import {
   type Session,
   type MotivoErro,
 } from '~/types'
+import { useDisplay } from 'vuetify'
+
+const { smAndDown } = useDisplay()
 
 const store = useStudyStore()
 const router = useRouter()
@@ -267,7 +271,7 @@ const headers = [
   { title: 'Matéria', key: 'subject', sortable: true },
   { title: 'Desempenho', key: 'score', sortable: false },
   { title: 'Motivo do Erro', key: 'primaryErrorReason', sortable: true },
-  { title: 'Ações', key: 'actions', sortable: false, align: 'center' as const },
+  { title: 'Ações', key: 'actions', sortable: false },
 ]
 
 const sessoesFiltradas = computed(() => {
