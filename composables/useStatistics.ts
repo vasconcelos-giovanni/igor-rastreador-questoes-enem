@@ -76,7 +76,7 @@ export function useStatistics() {
         }
 
         for (const session of store.sessions) {
-            if (session.wrongQuestions > 0) {
+            if (session.wrongQuestions > 0 && session.primaryErrorReason !== null) {
                 resultado[session.primaryErrorReason] += session.wrongQuestions
             }
         }

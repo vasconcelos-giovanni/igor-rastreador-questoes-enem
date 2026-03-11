@@ -82,15 +82,19 @@
                   label="Principal motivo dos erros"
                   :items="motivos"
                   :prepend-inner-icon="mdiAlertCircleOutline"
+                  :disabled="form.wrongQuestions === 0"
+                  :hint="form.wrongQuestions === 0 ? 'Desativado porque não houve erros' : ''"
+                  :persistent-hint="form.wrongQuestions === 0"
                   :error-messages="erros.primaryErrorReason"
                   @update:model-value="validarCampo('primaryErrorReason')"
                 >
                   <template #item="{ props: itemProps, item }">
                     <v-list-item v-bind="itemProps">
                       <template #prepend>
-                        <v-icon :color="CORES_MOTIVOS[item.value as MotivoErro]">
-                          {{ iconeMotivo(item.value as MotivoErro) }}
-                        </v-icon>
+                        <v-icon
+                          :color="CORES_MOTIVOS[item.value as MotivoErro]"
+                          :icon="iconeMotivo(item.value as MotivoErro)"
+                        />
                       </template>
                     </v-list-item>
                   </template>
@@ -238,6 +242,7 @@ import {
   mdiCalculator,
   mdiPercentOutline,
   mdiCheckCircle,
+  mdiCheckDecagram,
   mdiMagnifyClose,
   mdiBookRemove,
   mdiRunFast,
@@ -270,10 +275,10 @@ const editandoId = ref<string | null>(null)
 
 const form = ref<SessionForm>({
   date: new Date().toISOString().split('T')[0],
-  subject: '' as any,
-  totalQuestions: null as any,
-  wrongQuestions: null as any,
-  primaryErrorReason: '' as any,
+  subject: '' as Materia,
+  totalQuestions: null as unknown as number,
+  wrongQuestions: null as unknown as number,
+  primaryErrorReason: null,
 })
 
 const erros = ref<Record<string, string[]>>({
@@ -282,6 +287,14 @@ const erros = ref<Record<string, string[]>>({
   totalQuestions: [],
   wrongQuestions: [],
   primaryErrorReason: [],
+})
+
+// Limpa o motivo automaticamente ao zerar as questões erradas
+watch(() => form.value.wrongQuestions, (newVal) => {
+  if (newVal === 0) {
+    form.value.primaryErrorReason = null
+    erros.value.primaryErrorReason = []
+  }
 })
 
 // Verificar se veio um ID de edição via query string
@@ -321,7 +334,8 @@ const corTaxa = computed(() => {
   return 'error'
 })
 
-function iconeMotivo(motivo: MotivoErro): string {
+function iconeMotivo(motivo: MotivoErro | null): string {
+  if (motivo === null) return mdiCheckDecagram
   const icones: Record<MotivoErro, string> = {
     'Errei na Interpretação': mdiMagnifyClose,
     'Faltou Conteúdo': mdiBookRemove,
@@ -391,10 +405,10 @@ async function salvar() {
 function limparForm() {
   form.value = {
     date: new Date().toISOString().split('T')[0],
-    subject: '' as any,
-    totalQuestions: null as any,
-    wrongQuestions: null as any,
-    primaryErrorReason: '' as any,
+    subject: '' as Materia,
+    totalQuestions: null as unknown as number,
+    wrongQuestions: null as unknown as number,
+    primaryErrorReason: null,
   }
   Object.keys(erros.value).forEach(k => (erros.value[k] = []))
 }

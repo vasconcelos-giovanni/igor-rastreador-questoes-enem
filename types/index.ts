@@ -44,14 +44,30 @@ export const SessionSchema = z.object({
     totalQuestions: z.number().int().min(1, 'Mínimo de 1 questão'),
     wrongQuestions: z.number().int().min(0, 'Não pode ser negativo'),
     correctQuestions: z.number().int().min(0),
-    primaryErrorReason: MotivoErro,
-}).refine(
-    data => data.wrongQuestions <= data.totalQuestions,
-    {
-        message: 'Questões erradas não pode ser maior que o total',
-        path: ['wrongQuestions'],
-    },
-)
+    primaryErrorReason: MotivoErro.nullable(),
+}).superRefine((data, ctx) => {
+    if (data.wrongQuestions > data.totalQuestions) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Questões erradas não pode ser maior que o total',
+            path: ['wrongQuestions'],
+        })
+    }
+    if (data.wrongQuestions > 0 && data.primaryErrorReason === null) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Se houver erros, você precisa selecionar o motivo principal.',
+            path: ['primaryErrorReason'],
+        })
+    }
+    if (data.wrongQuestions === 0 && data.primaryErrorReason !== null) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Sessões sem erros não devem ter motivo selecionado.',
+            path: ['primaryErrorReason'],
+        })
+    }
+})
 
 export type Session = z.infer<typeof SessionSchema>
 
@@ -60,14 +76,30 @@ export const SessionFormSchema = z.object({
     subject: Materia,
     totalQuestions: z.number().int().min(1, 'Mínimo de 1 questão'),
     wrongQuestions: z.number().int().min(0, 'Não pode ser negativo'),
-    primaryErrorReason: MotivoErro,
-}).refine(
-    data => data.wrongQuestions <= data.totalQuestions,
-    {
-        message: 'Questões erradas não pode ser maior que o total',
-        path: ['wrongQuestions'],
-    },
-)
+    primaryErrorReason: MotivoErro.nullable(),
+}).superRefine((data, ctx) => {
+    if (data.wrongQuestions > data.totalQuestions) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Questões erradas não pode ser maior que o total',
+            path: ['wrongQuestions'],
+        })
+    }
+    if (data.wrongQuestions > 0 && data.primaryErrorReason === null) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Se houver erros, você precisa selecionar o motivo principal.',
+            path: ['primaryErrorReason'],
+        })
+    }
+    if (data.wrongQuestions === 0 && data.primaryErrorReason !== null) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Sessões sem erros não devem ter motivo selecionado.',
+            path: ['primaryErrorReason'],
+        })
+    }
+})
 
 export type SessionForm = z.infer<typeof SessionFormSchema>
 

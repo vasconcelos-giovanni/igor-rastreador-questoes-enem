@@ -24,7 +24,7 @@ export const useStudyStore = defineStore('study', () => {
             totalQuestions: form.totalQuestions,
             wrongQuestions: form.wrongQuestions,
             correctQuestions: form.totalQuestions - form.wrongQuestions,
-            primaryErrorReason: form.primaryErrorReason,
+            primaryErrorReason: form.wrongQuestions === 0 ? null : form.primaryErrorReason,
         }
         sessions.value.push(session)
         return session
@@ -41,7 +41,7 @@ export const useStudyStore = defineStore('study', () => {
             totalQuestions: form.totalQuestions,
             wrongQuestions: form.wrongQuestions,
             correctQuestions: form.totalQuestions - form.wrongQuestions,
-            primaryErrorReason: form.primaryErrorReason,
+            primaryErrorReason: form.wrongQuestions === 0 ? null : form.primaryErrorReason,
         }
     }
 

@@ -97,10 +97,10 @@
           <v-chip
             size="small"
             variant="tonal"
-            :color="CORES_MOTIVOS[item.primaryErrorReason]"
+            :color="item.primaryErrorReason ? CORES_MOTIVOS[item.primaryErrorReason] : 'success'"
             :prepend-icon="iconeMotivo(item.primaryErrorReason)"
           >
-            {{ item.primaryErrorReason }}
+            {{ item.primaryErrorReason ?? 'Sem erros' }}
           </v-chip>
         </template>
 
@@ -227,6 +227,7 @@ import {
   mdiDeleteSweep,
   mdiAlertCircle,
   mdiCheckCircle,
+  mdiCheckDecagram,
   mdiMagnifyClose,
   mdiBookRemove,
   mdiRunFast,
@@ -334,7 +335,8 @@ function corTaxa(item: Session): string {
   return 'error'
 }
 
-function iconeMotivo(motivo: MotivoErro): string {
+function iconeMotivo(motivo: MotivoErro | null): string {
+  if (motivo === null) return mdiCheckDecagram
   const icones: Record<MotivoErro, string> = {
     'Errei na Interpretação': mdiMagnifyClose,
     'Faltou Conteúdo': mdiBookRemove,
