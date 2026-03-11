@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1 class="text-h4 font-weight-bold mb-1">
-      <v-icon class="mr-2" color="primary">mdi-view-dashboard</v-icon>
+      <v-icon class="mr-2" color="primary" :icon="mdiViewDashboard" />
       Painel de Desempenho
     </h1>
     <p class="text-subtitle-1 text-medium-emphasis mb-6">
@@ -18,7 +18,7 @@
               <p class="text-h4 font-weight-bold">{{ stats.totalQuestoes.value }}</p>
             </div>
             <v-avatar color="primary" size="48">
-              <v-icon size="24">mdi-help-circle-outline</v-icon>
+              <v-icon size="24" :icon="mdiHelpCircleOutline" />
             </v-avatar>
           </div>
         </v-card>
@@ -32,7 +32,7 @@
               <p class="text-h4 font-weight-bold text-success">{{ stats.totalAcertos.value }}</p>
             </div>
             <v-avatar color="success" size="48">
-              <v-icon size="24">mdi-check-circle-outline</v-icon>
+              <v-icon size="24" :icon="mdiCheckCircleOutline" />
             </v-avatar>
           </div>
         </v-card>
@@ -46,7 +46,7 @@
               <p class="text-h4 font-weight-bold text-error">{{ stats.totalErros.value }}</p>
             </div>
             <v-avatar color="error" size="48">
-              <v-icon size="24">mdi-close-circle-outline</v-icon>
+              <v-icon size="24" :icon="mdiCloseCircleOutline" />
             </v-avatar>
           </div>
         </v-card>
@@ -62,7 +62,7 @@
               </p>
             </div>
             <v-avatar :color="corAvatarTaxa" size="48">
-              <v-icon size="24">mdi-percent-outline</v-icon>
+              <v-icon size="24" :icon="mdiPercentOutline" />
             </v-avatar>
           </div>
         </v-card>
@@ -74,7 +74,7 @@
       <v-col cols="12" sm="6">
         <v-card color="surface" class="pa-4">
           <p class="text-subtitle-2 text-medium-emphasis mb-2">
-            <v-icon size="18" class="mr-1">mdi-calendar-today</v-icon>
+            <v-icon size="18" class="mr-1" :icon="mdiCalendarToday" />
             Meta Diária
           </p>
           <div class="d-flex align-center justify-space-between mb-2">
@@ -97,7 +97,7 @@
       <v-col cols="12" sm="6">
         <v-card color="surface" class="pa-4">
           <p class="text-subtitle-2 text-medium-emphasis mb-2">
-            <v-icon size="18" class="mr-1">mdi-calendar-week</v-icon>
+            <v-icon size="18" class="mr-1" :icon="mdiCalendarWeek" />
             Meta Semanal
           </p>
           <div class="d-flex align-center justify-space-between mb-2">
@@ -123,7 +123,7 @@
       <v-col cols="12" md="7">
         <v-card color="surface" class="pa-4">
           <p class="text-subtitle-1 font-weight-bold mb-4">
-            <v-icon size="20" class="mr-1" color="primary">mdi-chart-bar</v-icon>
+            <v-icon size="20" class="mr-1" color="primary" :icon="mdiChartBar" />
             Acerto por Matéria
           </p>
           <div v-if="store.sessions.length > 0" class="chart-container">
@@ -131,7 +131,7 @@
           </div>
           <v-empty-state
             v-else
-            icon="mdi-chart-bar"
+            :icon="mdiChartBar"
             title="Sem dados para exibir"
             text="Registre sessões de estudo para ver seu desempenho por matéria."
           />
@@ -141,7 +141,7 @@
       <v-col cols="12" md="5">
         <v-card color="surface" class="pa-4">
           <p class="text-subtitle-1 font-weight-bold mb-4">
-            <v-icon size="20" class="mr-1" color="warning">mdi-chart-donut</v-icon>
+            <v-icon size="20" class="mr-1" color="warning" :icon="mdiChartDonut" />
             Por que Errei?
           </p>
           <div v-if="store.sessions.length > 0" class="chart-container d-flex justify-center">
@@ -152,7 +152,7 @@
           </div>
           <v-empty-state
             v-else
-            icon="mdi-chart-donut"
+            :icon="mdiChartDonut"
             title="Sem dados para exibir"
             text="Registre sessões para visualizar os motivos de erro."
           />
@@ -165,7 +165,7 @@
       <v-col cols="12">
         <v-card color="surface" class="pa-4">
           <p class="text-subtitle-1 font-weight-bold mb-4">
-            <v-icon size="20" class="mr-1" color="success">mdi-chart-line</v-icon>
+            <v-icon size="20" class="mr-1" color="success" :icon="mdiChartLine" />
             Evolução de Acertos ao Longo do Tempo
           </p>
           <div v-if="store.sessions.length > 0" class="chart-container">
@@ -173,7 +173,7 @@
           </div>
           <v-empty-state
             v-else
-            icon="mdi-chart-line"
+            :icon="mdiChartLine"
             title="Sem dados para exibir"
             text="Com o tempo, seu gráfico de evolução aparecerá aqui."
           />
@@ -185,7 +185,7 @@
     <v-btn
       color="primary"
       size="large"
-      icon="mdi-plus"
+      :icon="mdiPlus"
       position="fixed"
       location="bottom end"
       class="ma-6"
@@ -196,6 +196,19 @@
 </template>
 
 <script setup lang="ts">
+import {
+  mdiViewDashboard,
+  mdiHelpCircleOutline,
+  mdiCheckCircleOutline,
+  mdiCloseCircleOutline,
+  mdiPercentOutline,
+  mdiCalendarToday,
+  mdiCalendarWeek,
+  mdiChartBar,
+  mdiChartDonut,
+  mdiChartLine,
+  mdiPlus,
+} from '@mdi/js'
 import { Bar, Doughnut, Line } from 'vue-chartjs'
 
 const store = useStudyStore()

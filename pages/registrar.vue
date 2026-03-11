@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1 class="text-h4 font-weight-bold mb-1">
-      <v-icon class="mr-2" color="primary">mdi-plus-circle-outline</v-icon>
+      <v-icon class="mr-2" color="primary" :icon="mdiPlusCircleOutline" />
       Registrar Sessão de Estudo
     </h1>
     <p class="text-subtitle-1 text-medium-emphasis mb-6">
@@ -19,7 +19,7 @@
                   v-model="form.date"
                   label="Data"
                   type="date"
-                  prepend-inner-icon="mdi-calendar"
+                  :prepend-inner-icon="mdiCalendar"
                   :error-messages="erros.date"
                   @update:model-value="validarCampo('date')"
                 />
@@ -31,16 +31,17 @@
                   v-model="form.subject"
                   label="Matéria"
                   :items="materias"
-                  prepend-inner-icon="mdi-book-education"
+                  :prepend-inner-icon="mdiBookEducation"
                   :error-messages="erros.subject"
                   @update:model-value="validarCampo('subject')"
                 >
                   <template #item="{ props: itemProps, item }">
                     <v-list-item v-bind="itemProps">
                       <template #prepend>
-                        <v-icon :color="CORES_MATERIAS[item.value as Materia]">
-                          {{ ICONES_MATERIAS[item.value as Materia] }}
-                        </v-icon>
+                        <v-icon
+                          :color="CORES_MATERIAS[item.value as Materia]"
+                          :icon="ICONES_MATERIAS[item.value as Materia]"
+                        />
                       </template>
                     </v-list-item>
                   </template>
@@ -53,7 +54,7 @@
                   v-model.number="form.totalQuestions"
                   label="Questões Respondidas"
                   type="number"
-                  prepend-inner-icon="mdi-help-circle-outline"
+                  :prepend-inner-icon="mdiHelpCircleOutline"
                   :min="1"
                   :error-messages="erros.totalQuestions"
                   @update:model-value="validarCampo('totalQuestions')"
@@ -66,7 +67,7 @@
                   v-model.number="form.wrongQuestions"
                   label="Questões Erradas"
                   type="number"
-                  prepend-inner-icon="mdi-close-circle-outline"
+                  :prepend-inner-icon="mdiCloseCircleOutline"
                   :min="0"
                   :max="form.totalQuestions || undefined"
                   :error-messages="erros.wrongQuestions"
@@ -80,7 +81,7 @@
                   v-model="form.primaryErrorReason"
                   label="Principal motivo dos erros"
                   :items="motivos"
-                  prepend-inner-icon="mdi-alert-circle-outline"
+                  :prepend-inner-icon="mdiAlertCircleOutline"
                   :error-messages="erros.primaryErrorReason"
                   @update:model-value="validarCampo('primaryErrorReason')"
                 >
@@ -104,7 +105,7 @@
                 type="submit"
                 color="primary"
                 size="large"
-                prepend-icon="mdi-content-save"
+                :prepend-icon="mdiContentSave"
                 :loading="salvando"
               >
                 {{ editandoId ? 'Atualizar' : 'Registrar' }}
@@ -113,7 +114,7 @@
               <v-btn
                 variant="outlined"
                 size="large"
-                prepend-icon="mdi-eraser"
+                :prepend-icon="mdiEraser"
                 @click="limparForm"
               >
                 Limpar
@@ -123,7 +124,7 @@
                 v-if="editandoId"
                 variant="text"
                 size="large"
-                prepend-icon="mdi-close"
+                :prepend-icon="mdiClose"
                 @click="cancelarEdicao"
               >
                 Cancelar Edição
@@ -137,14 +138,14 @@
       <v-col cols="12" md="5">
         <v-card color="surface" class="pa-6">
           <p class="text-subtitle-1 font-weight-bold mb-4">
-            <v-icon size="20" class="mr-1" color="info">mdi-calculator</v-icon>
+            <v-icon size="20" class="mr-1" color="info" :icon="mdiCalculator" />
             Prévia em Tempo Real
           </p>
 
           <v-list bg-color="transparent" density="compact">
             <v-list-item>
               <template #prepend>
-                <v-icon color="info">mdi-help-circle-outline</v-icon>
+                <v-icon color="info" :icon="mdiHelpCircleOutline" />
               </template>
               <v-list-item-title>Questões Respondidas</v-list-item-title>
               <template #append>
@@ -154,7 +155,7 @@
 
             <v-list-item>
               <template #prepend>
-                <v-icon color="success">mdi-check-circle-outline</v-icon>
+                <v-icon color="success" :icon="mdiCheckCircleOutline" />
               </template>
               <v-list-item-title>Acertos</v-list-item-title>
               <template #append>
@@ -164,7 +165,7 @@
 
             <v-list-item>
               <template #prepend>
-                <v-icon color="error">mdi-close-circle-outline</v-icon>
+                <v-icon color="error" :icon="mdiCloseCircleOutline" />
               </template>
               <v-list-item-title>Erros</v-list-item-title>
               <template #append>
@@ -176,7 +177,7 @@
 
             <v-list-item>
               <template #prepend>
-                <v-icon :color="corTaxa">mdi-percent-outline</v-icon>
+                <v-icon :color="corTaxa" :icon="mdiPercentOutline" />
               </template>
               <v-list-item-title class="font-weight-bold">Taxa de Acerto</v-list-item-title>
               <template #append>
@@ -216,13 +217,31 @@
       timeout="3000"
       location="bottom end"
     >
-      <v-icon class="mr-2">mdi-check-circle</v-icon>
+      <v-icon class="mr-2" :icon="mdiCheckCircle" />
       {{ snackbarMsg }}
     </v-snackbar>
   </div>
 </template>
 
 <script setup lang="ts">
+import {
+  mdiPlusCircleOutline,
+  mdiCalendar,
+  mdiBookEducation,
+  mdiHelpCircleOutline,
+  mdiCheckCircleOutline,
+  mdiCloseCircleOutline,
+  mdiAlertCircleOutline,
+  mdiContentSave,
+  mdiEraser,
+  mdiClose,
+  mdiCalculator,
+  mdiPercentOutline,
+  mdiCheckCircle,
+  mdiMagnifyClose,
+  mdiBookRemove,
+  mdiRunFast,
+} from '@mdi/js'
 import {
   MATERIAS,
   MOTIVOS_ERRO,
@@ -304,9 +323,9 @@ const corTaxa = computed(() => {
 
 function iconeMotivo(motivo: MotivoErro): string {
   const icones: Record<MotivoErro, string> = {
-    'Errei na Interpretação': 'mdi-magnify-close',
-    'Faltou Conteúdo': 'mdi-book-remove',
-    'Fiz Depressa': 'mdi-run-fast',
+    'Errei na Interpretação': mdiMagnifyClose,
+    'Faltou Conteúdo': mdiBookRemove,
+    'Fiz Depressa': mdiRunFast,
   }
   return icones[motivo]
 }
