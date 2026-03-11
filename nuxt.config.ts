@@ -17,7 +17,7 @@ export default defineNuxtConfig({
             ],
             // Cache agressivo via Vercel headers (complementado pelo vercel.json)
             link: [
-                { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+                { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }
             ],
         },
     },
