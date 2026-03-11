@@ -54,16 +54,14 @@
         />
       </v-list>
 
-      <template #append>
-        <v-list density="compact" nav class="mb-2">
-          <v-list-item
-            :prepend-icon="mdiCogOutline"
-            title="Configurações"
-            rounded="lg"
-            @click="dialogConfiguracoes = true"
-          />
-        </v-list>
-      </template>
+      <v-list density="compact" nav class="mb-2">
+        <v-list-item
+          :prepend-icon="mdiCogOutline"
+          title="Configurações"
+          rounded="lg"
+          @click="dialogConfiguracoes = true"
+        />
+      </v-list>
     </v-navigation-drawer>
 
     <v-main>
