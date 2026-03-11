@@ -14,10 +14,15 @@ export default defineNuxtConfig({
                 { charset: 'utf-8' },
                 { name: 'viewport', content: 'width=device-width, initial-scale=1' },
                 { name: 'description', content: 'Equilibra Que Dá! - Acompanhe seu progresso nos estudos para o ENEM' },
+                { name: 'theme-color', content: '#356854' },
+                { name: 'apple-mobile-web-app-capable', content: 'yes' },
+                { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }
             ],
             // Cache agressivo via Vercel headers (complementado pelo vercel.json)
             link: [
-                { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }
+                { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+                { rel: 'manifest', href: '/manifest.json' },
+                { rel: 'apple-touch-icon', href: '/favicon.svg' } // Para iOS
             ],
         },
     },

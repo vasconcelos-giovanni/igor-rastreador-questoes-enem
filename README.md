@@ -13,10 +13,12 @@
 - 📋 **Histórico paginado** com filtro por matéria e exclusão de registros.
 - 🎯 **Metas diária e semanal** configuráveis pelo usuário.
 - 💾 **Persistência local** via `localStorage` — os dados ficam no dispositivo do aluno, sem necessidade de conta.
+- 🌐 PWA (Progressive Web App) — instalável no celular para uso como aplicativo nativo.
 - 🌐 **100% client-side** — nenhuma requisição para backend externo.
 - 🎨 **Tema escuro customizado** (`enemDark`) integrado ao Vuetify 3.
 - ✅ **Validação de formulários** com Zod — regras de negócio garantidas em tempo de compilação e em runtime.
 - 💾 **Portabilidade Total** — Sistema de Backup e Restauração via arquivos `.json` com validação de integridade.
+- 🚀 Onboarding Interativo — tutorial guiado para novos usuários.
 
 ---
 
