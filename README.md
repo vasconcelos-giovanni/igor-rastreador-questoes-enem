@@ -9,8 +9,9 @@
 ## ✨ Funcionalidades
 
 - 📝 **Registro de sessões** por matéria (Matemática, Linguagens, Ciências da Natureza, Ciências Humanas e suas subdisciplinas).
+- � **Histórico paginado** com filtro por matéria, exclusão e **duplicação rápida** de registros.
+- ⚡ **Edição Ágil** via modais integrados, sem necessidade de navegação entre páginas.
 - 📊 **Dashboard analítico** com KPIs, gráficos de barras, doughnut, linha e radar.
-- 📋 **Histórico paginado** com filtro por matéria e exclusão de registros.
 - 🎯 **Metas diária e semanal** configuráveis pelo usuário.
 - 💾 **Persistência local** via `localStorage` — os dados ficam no dispositivo do aluno, sem necessidade de conta.
 - 🌐 PWA (Progressive Web App) — instalável no celular para uso como aplicativo nativo.
@@ -98,8 +99,9 @@ export default defineEventHandler(async (event) => {
 |---|---|---|
 | **Tipos e Schemas** | `types/index.ts` | Enums, schemas Zod, tipos TypeScript |
 | **Estado Global** | `stores/study.ts` | Pinia store com persistência em `localStorage` |
+| **Componentes** | `components/` | Elementos de interface desacoplados e reutilizáveis |
 | **Lógica de Negócio** | `composables/useStatistics.ts` | Cálculos de estatísticas e datasets para gráficos |
-| **Interface** | `pages/`, `layouts/` | Telas Vue 3 com Vuetify 3 |
+| **Interface (Páginas)** | `pages/`, `layouts/` | Telas orchestradoras da aplicação |
 | **Plugins** | `plugins/` | Inicialização de Vuetify, Pinia e Chart.js |
 
 ### Tipos e Validação (Zod)
@@ -174,6 +176,9 @@ equilibra-que-da-ifrn/
 ├── package.json
 ├── tsconfig.json
 ├── .tool-versions              # Versão do Node.js (asdf/mise)
+│
+├── components/                 # Componentes Vue reutilizáveis
+│   └── SessionForm.vue         # Lógica centralizada de registro e validação
 │
 ├── .github/
 │   └── workflows/
@@ -313,8 +318,8 @@ O preset `netlify` do Nitro converte Server Routes em **Netlify Functions**. Par
 | Rota | Arquivo | Descrição |
 |---|---|---|
 | `/` | `pages/index.vue` | Dashboard com KPIs, gráficos e metas |
-| `/registrar` | `pages/registrar.vue` | Formulário de registro/edição de sessão |
-| `/historico` | `pages/historico.vue` | Listagem com filtro e exclusão de registros |
+| `/registrar` | `pages/registrar.vue` | Container para registro rápido |
+| `/historico` | `pages/historico.vue` | Listagem com edição/duplicação via modais |
 | `/ajuda-backup` | `pages/ajuda-backup.vue` | Guia de exportação e importação de dados |
 
 ---

@@ -7,6 +7,19 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-03-11
+
+### Added
+
+- **Duplicação de Sessões:** Nova funcionalidade que permite copiar uma sessão existente (mantendo a matéria e questões, mas resetando a data para hoje) para agilizar registros recorrentes.
+- **Edição via Modais:** O histórico agora permite editar registros diretamente em um `v-dialog`, eliminando a troca de página e melhorando a fluidez da UX.
+
+### Refactor
+
+- **Componentização do Formulário:** Extração da lógica de registro de `pages/registrar.vue` para um novo componente reutilizável `components/SessionForm.vue`.
+- **Aprimoramento de Responsividade:** Implementação de modais fullscreen (`smAndDown`) para garantir uma experiência de edição confortável em dispositivos móveis.
+- **Arquitetura Desacoplada:** Simplificação das páginas para atuarem como containers, delegando a lógica de negócio ao componente de formulário.
+
 ## [1.1.0] - 2026-03-10
 
 ### Added
