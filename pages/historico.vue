@@ -55,6 +55,7 @@
         :no-data-text="'Nenhuma sessão encontrada'"
         :items-per-page-text="'Itens por página'"
         class="bg-surface"
+        :mobile="smAndDown"
       >
         <!-- Coluna Data -->
         <template #item.date="{ item }">
@@ -77,7 +78,7 @@
 
         <!-- Coluna Desempenho -->
         <template #item.score="{ item }">
-          <div class="d-flex align-center ga-2">
+          <div class="ga-2">
             <span class="text-success font-weight-bold">{{ item.correctQuestions }}</span>
             <span class="text-medium-emphasis">/</span>
             <span>{{ item.totalQuestions }}</span>
@@ -106,21 +107,45 @@
 
         <!-- Coluna Ações -->
         <template #item.actions="{ item }">
-          <div class="d-flex ga-1">
+          <div class="ga-1 justify-start">
             <v-btn
               :icon="mdiPencilOutline"
               size="small"
               variant="text"
               color="info"
               @click="editarSessao(item)"
-            />
+            >
+              <v-icon :icon="mdiPencilOutline" />
+              <v-tooltip activator="parent" location="top">
+                <span class="text-white">Editar sessão</span>
+              </v-tooltip>
+            </v-btn>
+
+            <v-btn
+              :icon="mdiContentDuplicate"
+              size="small"
+              variant="text"
+              color="secondary"
+              @click="duplicarSessao(item)"
+            >
+              <v-icon :icon="mdiContentDuplicate" />
+              <v-tooltip activator="parent" location="top">
+                <span class="text-white">Duplicar sessão</span>
+              </v-tooltip>
+            </v-btn>
+
             <v-btn
               :icon="mdiDeleteOutline"
               size="small"
               variant="text"
               color="error"
               @click="confirmarExclusao(item)"
-            />
+            >
+              <v-icon :icon="mdiDeleteOutline" />
+              <v-tooltip activator="parent" location="top">
+                <span class="text-white">Excluir sessão</span>
+              </v-tooltip>
+            </v-btn>
           </div>
         </template>
 
@@ -130,7 +155,7 @@
           <div class="d-flex flex-wrap align-center justify-space-between pa-4 ga-4">
             <div class="d-flex flex-wrap ga-4">
               <span class="text-body-2 text-medium-emphasis">
-                <strong>{{ sessoesFiltradas.length }}</strong> sessão(ões)
+                <strong>{{ sessoesFiltradas.length }}</strong> sessões
               </span>
               <span class="text-body-2 text-medium-emphasis">
                 <strong>{{ totalFiltrado }}</strong> questões
@@ -207,8 +232,31 @@
       </v-card>
     </v-dialog>
 
+    <!-- Diálogo de edição / duplicação -->  
+    <v-dialog v-model="dialogFormulario" :fullscreen="smAndDown" max-width="960" scrollable>
+      <v-card>
+        <v-card-title class="d-flex align-center pa-4">
+          <v-icon
+            class="mr-2"
+            :icon="duplicandoId ? mdiContentDuplicate : mdiPencilOutline"
+            :color="duplicandoId ? 'secondary' : 'info'"
+          />
+          {{ duplicandoId ? 'Duplicar Sessão' : 'Editar Sessão' }}
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-6">
+          <SessionForm
+            :edit-id="editandoId ?? undefined"
+            :duplicate-id="duplicandoId ?? undefined"
+            @success="onFormSuccess"
+            @cancel="fecharFormulario"
+          />
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
     <!-- Snackbar -->
-    <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="3000" location="bottom end">
+    <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="3000" location="bottom center">
       <v-icon class="mr-2" :icon="snackbarIcon" />
       {{ snackbarMsg }}
     </v-snackbar>
@@ -223,6 +271,7 @@ import {
   mdiCalendarEnd,
   mdiCalendar,
   mdiPencilOutline,
+  mdiContentDuplicate,
   mdiDeleteOutline,
   mdiDeleteSweep,
   mdiAlertCircle,
@@ -240,9 +289,11 @@ import {
   type Session,
   type MotivoErro,
 } from '~/types'
+import { useDisplay } from 'vuetify'
+
+const { smAndDown } = useDisplay()
 
 const store = useStudyStore()
-const router = useRouter()
 
 const materias = MATERIAS
 
@@ -252,6 +303,9 @@ const filtroDataInicio = ref<string | null>(null)
 const filtroDataFim = ref<string | null>(null)
 
 // Diálogos
+const dialogFormulario = ref(false)
+const editandoId = ref<string | null>(null)
+const duplicandoId = ref<string | null>(null)
 const dialogExcluir = ref(false)
 const dialogLimpar = ref(false)
 const sessaoParaExcluir = ref<Session | null>(null)
@@ -267,7 +321,7 @@ const headers = [
   { title: 'Matéria', key: 'subject', sortable: true },
   { title: 'Desempenho', key: 'score', sortable: false },
   { title: 'Motivo do Erro', key: 'primaryErrorReason', sortable: true },
-  { title: 'Ações', key: 'actions', sortable: false, align: 'center' as const },
+  { title: 'Ações', key: 'actions', sortable: false },
 ]
 
 const sessoesFiltradas = computed(() => {
@@ -346,7 +400,26 @@ function iconeMotivo(motivo: MotivoErro | null): string {
 }
 
 function editarSessao(sessao: Session) {
-  router.push({ path: '/registrar', query: { editar: sessao.id } })
+  duplicandoId.value = null
+  editandoId.value = sessao.id
+  dialogFormulario.value = true
+}
+
+function duplicarSessao(sessao: Session) {
+  editandoId.value = null
+  duplicandoId.value = sessao.id
+  dialogFormulario.value = true
+}
+
+function fecharFormulario() {
+  dialogFormulario.value = false
+  editandoId.value = null
+  duplicandoId.value = null
+}
+
+function onFormSuccess(message: string) {
+  fecharFormulario()
+  mostrarSnackbar(message, 'success', mdiCheckCircle)
 }
 
 function confirmarExclusao(sessao: Session) {
