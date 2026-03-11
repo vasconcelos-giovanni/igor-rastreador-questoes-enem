@@ -13,9 +13,12 @@
 - 📋 **Histórico paginado** com filtro por matéria e exclusão de registros.
 - 🎯 **Metas diária e semanal** configuráveis pelo usuário.
 - 💾 **Persistência local** via `localStorage` — os dados ficam no dispositivo do aluno, sem necessidade de conta.
+- 🌐 PWA (Progressive Web App) — instalável no celular para uso como aplicativo nativo.
 - 🌐 **100% client-side** — nenhuma requisição para backend externo.
 - 🎨 **Tema escuro customizado** (`enemDark`) integrado ao Vuetify 3.
 - ✅ **Validação de formulários** com Zod — regras de negócio garantidas em tempo de compilação e em runtime.
+- 💾 **Portabilidade Total** — Sistema de Backup e Restauração via arquivos `.json` com validação de integridade.
+- 🚀 Onboarding Interativo — tutorial guiado para novos usuários.
 
 ---
 
@@ -25,6 +28,8 @@
 |---|---|
 | Node.js | `^24.x` (recomendado via `.tool-versions`) |
 | npm | `^10.x` |
+| jq | `^1.6` (necessário para o `release.sh`) |
+| driver.js | `^1.4.0` (tour de onboarding) |
 
 > O arquivo [`.tool-versions`](.tool-versions) permite gerenciar a versão do Node.js com [asdf](https://asdf-vm.com/) ou [mise](https://mise.jdx.dev/).
 
@@ -99,43 +104,111 @@ export default defineEventHandler(async (event) => {
 
 ### Tipos e Validação (Zod)
 
-Todos os contratos de dados são definidos em [`types/index.ts`](types/index.ts) com [Zod](https://zod.dev/). O schema `SessionSchema` é a fonte única de verdade para uma sessão de estudo:
+Todos os contratos de dados são definidos em [`types/index.ts`](types/index.ts) com [Zod](https://zod.dev/). A principal inovação é a **Lógica de Erro Zero**, implementada via `.superRefine()` no `SessionSchema`:
 
 ```ts
 export const SessionSchema = z.object({
     id:                  z.string().uuid(),
     date:                z.string().min(1),
-    subject:             Materia,           // enum validado
+    subject:             Materia,
     totalQuestions:      z.number().int().min(1),
     wrongQuestions:      z.number().int().min(0),
     correctQuestions:    z.number().int().min(0),
-    primaryErrorReason:  MotivoErro,        // enum validado
-}).refine(
-    data => data.wrongQuestions <= data.totalQuestions,
-    { message: 'Questões erradas não pode ser maior que o total' },
-)
-```
-
-### Estado Global (Pinia + persistedstate)
-
-O [`stores/study.ts`](stores/study.ts) é a única store da aplicação. Ela é configurada com o plugin `pinia-plugin-persistedstate`, que serializa e desserializa automaticamente o estado em `localStorage` sob a chave `enem-tracker-data`.
-
-```ts
-export const useStudyStore = defineStore('study', () => {
-    const sessions = ref<Session[]>([])
-    const goal     = ref<Goal>({ dailyTarget: 30, weeklyTarget: 150 })
-    // ...
-}, {
-    persist: {
-        storage: localStorage,
-        key: 'enem-tracker-data',
-    },
+    primaryErrorReason:  MotivoErro.nullable(), // Suporta Erro Zero
+}).superRefine((data, ctx) => {
+    // Se houver erros, o motivo é obrigatório
+    if (data.wrongQuestions > 0 && data.primaryErrorReason === null) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Se houver erros, selecione o motivo.', path: ['primaryErrorReason'] })
+    }
+    // Se não houver erros, o motivo deve ser nulo
+    if (data.wrongQuestions === 0 && data.primaryErrorReason !== null) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Sessões sem erros não devem ter motivo.', path: ['primaryErrorReason'] })
+    }
 })
 ```
 
-### Composable de Estatísticas
+---
 
-O [`composables/useStatistics.ts`](composables/useStatistics.ts) encapsula toda a lógica de cálculo e a preparação dos datasets para o Chart.js. Utiliza `computed` reativo para que os gráficos e KPIs sejam atualizados automaticamente sempre que a store muda.
+### Portabilidade e Backup
+
+Como o estado reside exclusivamente no navegador do aluno, a aplicação implementa um sistema de **Backup e Restauração** via arquivo JSON, garantindo a portabilidade dos dados entre dispositivos.
+
+- **Exportação (`exportData`):** A store Pinia gera um arquivo `.json` contendo as sessões e metas, incluindo um timestamp `exportedAt`.
+- **Importação (`importData`):** Valida a integridade do arquivo utilizando `LocalStorageSchema.safeParse` antes de persistir no `localStorage`.
+- **Segurança e Integridade:** O uso do Zod garante que dados importados respeitem todas as regras de negócio (ex: total de acertos deve ser coerente com o total de questões).
+
+### Analytics (Estatísticas)
+
+O composable [`composables/useStatistics.ts`](composables/useStatistics.ts) processa os dados para visualização. Para manter a relevância pedagógica, os gráficos de **"Motivos de Erro"** filtram automaticamente entradas onde `primaryErrorReason` é nulo, focando apenas nos pontos de melhoria real.
+
+### Onboarding Interativo
+
+A primeira experiência do usuário é guiada pelo composable [`composables/useOnboarding.ts`](composables/useOnboarding.ts), que utiliza a biblioteca **driver.js**.
+
+- **Persistência:** O status do tour é controlado pela chave `equilibra-onboarding-completo` no `localStorage`.
+- **Design:** O tour possui estilização customizada (`.equilibra-popover`) para o tema **enemDark**, com background em tom *surface* (`#434343`) e botões na cor *primary* do IFRN.
+- **Tour Manual:** O usuário pode reiniciar o tutorial a qualquer momento através do modal de Configurações.
+
+---
+
+## 🔖 Versionamento e Release
+
+### Automação com `release.sh`
+
+Para manter a consistência do projeto, utilizamos o script [`scripts/release.sh`](scripts/release.sh), que automatiza o ciclo de vida de novas versões:
+
+1. **Bump de Versão:** Atualiza o versionamento no `package.json` seguindo o padrão SemVer.
+2. **Registro:** Atualiza o `CHANGELOG.md` com as mudanças recentes.
+3. **Git Tag:** Cria uma tag anotada localmente.
+4. **Deploy:** Ao realizar o push da tag (`git push --tags`), o **GitHub Actions** dispara automaticamente o build e deploy para produção no branch `main`.
+
+---
+
+## 🗂️ Estrutura do Projeto
+
+```
+equilibra-que-da-ifrn/
+├── app.vue                     # Entrada da aplicação Vue e Estilos do Driver.js
+├── nuxt.config.ts              # Configuração do Nuxt 3 / Nitro (preset: static)
+├── vercel.json                 # Headers de cache agressivo para o Edge Network
+├── package.json
+├── tsconfig.json
+├── .tool-versions              # Versão do Node.js (asdf/mise)
+│
+├── .github/
+│   └── workflows/
+│       └── deploy.yml          # CI/CD: deploy apenas em tags de release
+│
+├── types/
+│   └── index.ts                # Schemas Zod com Lógica de Erro Zero
+│
+├── stores/
+│   └── study.ts                # Pinia store com exportData/importData
+│
+├── composables/
+│   ├── useStatistics.ts        # Lógica de cálculo (filtros de relevância)
+│   └── useOnboarding.ts        # Gerenciamento do Tour de Boas-vindas
+│
+├── pages/
+│   ├── index.vue               # Dashboard de desempenho
+│   ├── registrar.vue           # Registro/edição de sessão
+│   ├── historico.vue           # Histórico de registros
+│   └── ajuda-backup.vue        # Guia detalhado de backup
+│
+├── layouts/
+│   └── default.vue             # Layout com Toolbar e Navigation Drawer
+│
+├── plugins/
+│   ├── vuetify.ts              # Vuetify 3 com @mdi/js (tree-shaking de ícones)
+│   ├── pinia.ts                # Inicialização do Pinia com persistedstate
+│   └── chartjs.client.ts       # Registro dos componentes do Chart.js (client-only)
+│
+├── public/
+│   └── assets/images/          # Logos e imagens (preferencialmente WebP)
+│
+└── scripts/
+    └── release.sh              # Automação de releases SemVer
+```
 
 ---
 
@@ -242,6 +315,91 @@ O preset `netlify` do Nitro converte Server Routes em **Netlify Functions**. Par
 | `/` | `pages/index.vue` | Dashboard com KPIs, gráficos e metas |
 | `/registrar` | `pages/registrar.vue` | Formulário de registro/edição de sessão |
 | `/historico` | `pages/historico.vue` | Listagem com filtro e exclusão de registros |
+| `/ajuda-backup` | `pages/ajuda-backup.vue` | Guia de exportação e importação de dados |
+
+---
+
+## ⚡ Otimizações de Performance
+
+### Estratégia de Build: Static Site Generation (SSG)
+
+O Nitro está configurado com `preset: 'static'`. O comando `npm run generate` produz arquivos 100% estáticos em `.output/public/`, que o Vercel serve diretamente pelo **Edge Network (CDN)** — sem disparar nenhuma Serverless Function. Com 150 usuários/mês, a aplicação permanece confortavelmente na camada gratuita Hobby.
+
+```
+Usuário → Vercel Edge (CDN) → .output/public/
+           ↑
+        Cache-Control: max-age=31536000, immutable
+        (JS/CSS com hash de conteúdo nunca expiram)
+```
+
+### Cache Agressivo (`vercel.json`)
+
+O arquivo [`vercel.json`](vercel.json) configura headers HTTP por padrão de rota:
+
+| Padrão | Cache-Control | Estratégia |
+|---|---|---|
+| `/_nuxt/**`, `/**/*.js`, `/**/*.css` | `immutable, 1 ano` | Hash de conteúdo muda a cada deploy |
+| `/assets/**`, `/**/*.webp` | `immutable, 1 ano` | Assets com hashes |
+| `/**/*.html` | `must-revalidate` | HTML sempre revalidado para receber o novo bundle |
+
+### Tree-Shaking de Ícones (`@mdi/js`)
+
+A biblioteca `@mdi/font` carregava um arquivo CSS de ~300 KB com todos os ícones MDI. Ela foi substituída por `@mdi/js`, que exporta cada ícone como uma constante SVG individual.
+
+**Antes:** `@mdi/font` → ~300 KB (CSS + woff2 com todos os ícones)
+**Depois:** `@mdi/js` → apenas os ícones importados entram no bundle
+
+Como usar ícones em componentes Vue:
+
+```vue
+<script setup lang="ts">
+import { mdiCheckCircleOutline, mdiCloseCircleOutline } from '@mdi/js'
+</script>
+
+<template>
+  <!-- Ícone inline via SVG path -->
+  <v-icon :icon="mdiCheckCircleOutline" color="success" />
+  <v-icon :icon="mdiCloseCircleOutline" color="error" />
+</template>
+```
+
+> Todos os ícones disponíveis estão listados em [@mdi/js no npm](https://www.npmjs.com/package/@mdi/js). O nome segue o padrão camelCase: `mdi-check-circle-outline` → `mdiCheckCircleOutline`.
+
+### Validação do `localStorage` (Anti-CLS)
+
+O `pinia-plugin-persistedstate` hidrata a store a partir do `localStorage` no primeiro carregamento. Dados corrompidos ou de uma versão antiga podem causar erros em runtime e re-renders desnecessários (CLS — Cumulative Layout Shift).
+
+O serializer customizado em [`stores/study.ts`](stores/study.ts) envolve a desserialização com `LocalStorageSchema.safeParse()`. Se os dados forem inválidos, o estado padrão é usado silenciosamente:
+
+```ts
+serializer: {
+    serialize: JSON.stringify,
+    deserialize: (raw) => {
+        try {
+            const result = LocalStorageSchema.safeParse(JSON.parse(raw))
+            if (result.success) return result.data
+            return LocalStorageSchema.parse({})  // estado padrão seguro
+        } catch {
+            return LocalStorageSchema.parse({})
+        }
+    },
+},
+```
+
+O `LocalStorageSchema` está definido em [`types/index.ts`](types/index.ts) e valida toda a estrutura do estado persistido:
+
+```ts
+export const LocalStorageSchema = z.object({
+    sessions: z.array(SessionSchema).default([]),
+    goal: GoalSchema.default({ dailyTarget: 30, weeklyTarget: 150 }),
+})
+```
+
+### Compressão de Assets
+
+O Nitro está configurado com `compressPublicAssets: { brotli: true, gzip: true }`. Todos os arquivos estáticos são pré-comprimidos em formato Brotli e Gzip durante o `npm run generate`.
+
+> **Recomendação:** Converta imagens em `public/assets/images/` para o formato **WebP**. Ferramentas recomendadas: [Squoosh](https://squoosh.app/) ou `npx @squoosh/cli --webp auto public/assets/images/*.png`.
 
 ---
 
@@ -301,6 +459,41 @@ git commit -m "chore(deps): atualiza nuxt para 3.15.0"
 git commit -m "docs: adiciona seção de deploy na Vercel ao README"
 ```
 
+### CI/CD com GitHub Actions
+
+O workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) garante que o Vercel só receba um deploy quando uma tag de release é criada — **nenhum push de commit rotineiro consome Build Minutes**.
+
+```
+git push origin feat/nova-funcionalidade  → ✗  Sem deploy
+git push origin main                      → ✗  Sem deploy
+git push origin v1.2.0                    → ✅  Deploy de Produção
+```
+
+#### Configuração dos Segredos
+
+Nas configurações do repositório (**Settings → Secrets and variables → Actions**), cadastre:
+
+| Secret | Como obter |
+|---|---|
+| `VERCEL_TOKEN` | [vercel.com/account/tokens](https://vercel.com/account/tokens) |
+| `VERCEL_ORG_ID` | Execute `npx vercel link` → leia `.vercel/project.json` |
+| `VERCEL_PROJECT_ID` | Idem acima |
+
+#### Fluxo Completo de Release
+
+```bash
+# 1. Finalize suas features no branch principal
+git checkout main
+
+# 2. Execute o script de release (faz bump, gera CHANGELOG, cria tag)
+./scripts/release.sh minor
+
+# 3. Publique a tag — isso dispara o deploy automaticamente
+git push origin main --follow-tags
+# ou separadamente:
+git push origin v1.2.0
+```
+
 ### Script de Release
 
 O arquivo [`scripts/release.sh`](scripts/release.sh) automatiza todo o processo de release:
@@ -345,16 +538,21 @@ chmod +x scripts/release.sh
 ```
 equilibra-que-da-ifrn/
 ├── app.vue                     # Entrada da aplicação Vue
-├── nuxt.config.ts              # Configuração do Nuxt 3 / Nitro
+├── nuxt.config.ts              # Configuração do Nuxt 3 / Nitro (preset: static)
+├── vercel.json                 # Headers de cache agressivo para o Edge Network
 ├── package.json
 ├── tsconfig.json
 ├── .tool-versions              # Versão do Node.js (asdf/mise)
 │
+├── .github/
+│   └── workflows/
+│       └── deploy.yml          # CI/CD: deploy apenas em tags de release
+│
 ├── types/
-│   └── index.ts                # Enums, schemas Zod e tipos TypeScript
+│   └── index.ts                # Enums, schemas Zod, LocalStorageSchema
 │
 ├── stores/
-│   └── study.ts                # Pinia store — estado global com persistência
+│   └── study.ts                # Pinia store com serializer Zod anti-CLS
 │
 ├── composables/
 │   └── useStatistics.ts        # Lógica de cálculo e datasets para Chart.js
@@ -362,18 +560,19 @@ equilibra-que-da-ifrn/
 ├── pages/
 │   ├── index.vue               # Dashboard de desempenho
 │   ├── registrar.vue           # Registro/edição de sessão de estudo
-│   └── historico.vue           # Histórico de registros
+│   ├── historico.vue           # Histórico de registros
+│   └── ajuda-backup.vue        # Guia de backup e restauração
 │
 ├── layouts/
 │   └── default.vue             # Layout principal (AppBar, Navigation Drawer, Footer)
 │
 ├── plugins/
-│   ├── vuetify.ts              # Inicialização do Vuetify 3 com tema customizado
+│   ├── vuetify.ts              # Vuetify 3 com @mdi/js (tree-shaking de ícones)
 │   ├── pinia.ts                # Inicialização do Pinia com persistedstate
 │   └── chartjs.client.ts       # Registro dos componentes do Chart.js (client-only)
 │
 ├── public/
-│   └── assets/images/          # Logos e imagens estáticas
+│   └── assets/images/          # Logos e imagens (preferencialmente WebP)
 │
 └── scripts/
     └── release.sh              # Automação de releases e geração de CHANGELOG

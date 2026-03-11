@@ -1,4 +1,15 @@
 import { z } from 'zod'
+import {
+    mdiCalculatorVariant,
+    mdiBookOpenPageVariant,
+    mdiAtom,
+    mdiFlask,
+    mdiDna,
+    mdiCastle,
+    mdiEarth,
+    mdiAccountGroup,
+    mdiHeadLightbulb,
+} from '@mdi/js'
 
 export const Materia = z.enum([
     'Matemática',
@@ -33,14 +44,30 @@ export const SessionSchema = z.object({
     totalQuestions: z.number().int().min(1, 'Mínimo de 1 questão'),
     wrongQuestions: z.number().int().min(0, 'Não pode ser negativo'),
     correctQuestions: z.number().int().min(0),
-    primaryErrorReason: MotivoErro,
-}).refine(
-    data => data.wrongQuestions <= data.totalQuestions,
-    {
-        message: 'Questões erradas não pode ser maior que o total',
-        path: ['wrongQuestions'],
-    },
-)
+    primaryErrorReason: MotivoErro.nullable(),
+}).superRefine((data, ctx) => {
+    if (data.wrongQuestions > data.totalQuestions) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Questões erradas não pode ser maior que o total',
+            path: ['wrongQuestions'],
+        })
+    }
+    if (data.wrongQuestions > 0 && data.primaryErrorReason === null) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Se houver erros, você precisa selecionar o motivo principal.',
+            path: ['primaryErrorReason'],
+        })
+    }
+    if (data.wrongQuestions === 0 && data.primaryErrorReason !== null) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Sessões sem erros não devem ter motivo selecionado.',
+            path: ['primaryErrorReason'],
+        })
+    }
+})
 
 export type Session = z.infer<typeof SessionSchema>
 
@@ -49,14 +76,30 @@ export const SessionFormSchema = z.object({
     subject: Materia,
     totalQuestions: z.number().int().min(1, 'Mínimo de 1 questão'),
     wrongQuestions: z.number().int().min(0, 'Não pode ser negativo'),
-    primaryErrorReason: MotivoErro,
-}).refine(
-    data => data.wrongQuestions <= data.totalQuestions,
-    {
-        message: 'Questões erradas não pode ser maior que o total',
-        path: ['wrongQuestions'],
-    },
-)
+    primaryErrorReason: MotivoErro.nullable(),
+}).superRefine((data, ctx) => {
+    if (data.wrongQuestions > data.totalQuestions) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Questões erradas não pode ser maior que o total',
+            path: ['wrongQuestions'],
+        })
+    }
+    if (data.wrongQuestions > 0 && data.primaryErrorReason === null) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Se houver erros, você precisa selecionar o motivo principal.',
+            path: ['primaryErrorReason'],
+        })
+    }
+    if (data.wrongQuestions === 0 && data.primaryErrorReason !== null) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Sessões sem erros não devem ter motivo selecionado.',
+            path: ['primaryErrorReason'],
+        })
+    }
+})
 
 export type SessionForm = z.infer<typeof SessionFormSchema>
 
@@ -86,13 +129,26 @@ export const CORES_MOTIVOS: Record<MotivoErro, string> = {
 }
 
 export const ICONES_MATERIAS: Record<Materia, string> = {
-    'Matemática': 'mdi-calculator-variant',
-    'Linguagens': 'mdi-book-open-page-variant',
-    'Física': 'mdi-atom',
-    'Química': 'mdi-flask',
-    'Biologia': 'mdi-dna',
-    'História': 'mdi-castle',
-    'Geografia': 'mdi-earth',
-    'Sociologia': 'mdi-account-group',
-    'Filosofia': 'mdi-head-lightbulb',
+    'Matemática': mdiCalculatorVariant,
+    'Linguagens': mdiBookOpenPageVariant,
+    'Física': mdiAtom,
+    'Química': mdiFlask,
+    'Biologia': mdiDna,
+    'História': mdiCastle,
+    'Geografia': mdiEarth,
+    'Sociologia': mdiAccountGroup,
+    'Filosofia': mdiHeadLightbulb,
 }
+
+// ---------------------------------------------------------------------------
+// Schema de validação do localStorage
+// ---------------------------------------------------------------------------
+// Protege contra dados corrompidos, versões antigas ou manipulação manual.
+// Usado na hidratação do Pinia para nunca quebrar a aplicação.
+
+export const LocalStorageSchema = z.object({
+    sessions: z.array(SessionSchema).default([]),
+    goal: GoalSchema.default({ dailyTarget: 30, weeklyTarget: 150 }),
+})
+
+export type LocalStorageData = z.infer<typeof LocalStorageSchema>

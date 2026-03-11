@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1 class="text-h4 font-weight-bold mb-1">
-      <v-icon class="mr-2" color="primary">mdi-history</v-icon>
+      <v-icon class="mr-2" color="primary" :icon="mdiHistory" />
       Histórico de Sessões
     </h1>
     <p class="text-subtitle-1 text-medium-emphasis mb-6">
@@ -16,7 +16,7 @@
             v-model="filtroMateria"
             label="Filtrar por Matéria"
             :items="['Todas', ...materias]"
-            prepend-inner-icon="mdi-filter-variant"
+            :prepend-inner-icon="mdiFilterVariant"
             clearable
             hide-details
           />
@@ -27,7 +27,7 @@
             v-model="filtroDataInicio"
             label="Data Início"
             type="date"
-            prepend-inner-icon="mdi-calendar-start"
+            :prepend-inner-icon="mdiCalendarStart"
             clearable
             hide-details
           />
@@ -38,7 +38,7 @@
             v-model="filtroDataFim"
             label="Data Fim"
             type="date"
-            prepend-inner-icon="mdi-calendar-end"
+            :prepend-inner-icon="mdiCalendarEnd"
             clearable
             hide-details
           />
@@ -58,7 +58,7 @@
       >
         <!-- Coluna Data -->
         <template #item.date="{ item }">
-          <v-chip size="small" variant="tonal" color="info" prepend-icon="mdi-calendar">
+          <v-chip size="small" variant="tonal" color="info" :prepend-icon="mdiCalendar">
             {{ formatarData(item.date) }}
           </v-chip>
         </template>
@@ -97,10 +97,10 @@
           <v-chip
             size="small"
             variant="tonal"
-            :color="CORES_MOTIVOS[item.primaryErrorReason]"
+            :color="item.primaryErrorReason ? CORES_MOTIVOS[item.primaryErrorReason] : 'success'"
             :prepend-icon="iconeMotivo(item.primaryErrorReason)"
           >
-            {{ item.primaryErrorReason }}
+            {{ item.primaryErrorReason ?? 'Sem erros' }}
           </v-chip>
         </template>
 
@@ -108,14 +108,14 @@
         <template #item.actions="{ item }">
           <div class="d-flex ga-1">
             <v-btn
-              icon="mdi-pencil-outline"
+              :icon="mdiPencilOutline"
               size="small"
               variant="text"
               color="info"
               @click="editarSessao(item)"
             />
             <v-btn
-              icon="mdi-delete-outline"
+              :icon="mdiDeleteOutline"
               size="small"
               variant="text"
               color="error"
@@ -151,7 +151,7 @@
               variant="outlined"
               color="error"
               size="small"
-              prepend-icon="mdi-delete-sweep"
+              :prepend-icon="mdiDeleteSweep"
               @click="dialogLimpar = true"
             >
               Limpar Tudo
@@ -165,7 +165,7 @@
     <v-dialog v-model="dialogExcluir" max-width="400" persistent>
       <v-card>
         <v-card-title class="d-flex align-center">
-          <v-icon class="mr-2" color="error">mdi-alert-circle</v-icon>
+          <v-icon class="mr-2" color="error" :icon="mdiAlertCircle" />
           Confirmar Exclusão
         </v-card-title>
 
@@ -187,7 +187,7 @@
     <v-dialog v-model="dialogLimpar" max-width="400" persistent>
       <v-card>
         <v-card-title class="d-flex align-center">
-          <v-icon class="mr-2" color="error">mdi-delete-sweep</v-icon>
+          <v-icon class="mr-2" color="error" :icon="mdiDeleteSweep" />
           Limpar Todos os Dados
         </v-card-title>
 
@@ -209,13 +209,29 @@
 
     <!-- Snackbar -->
     <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="3000" location="bottom end">
-      <v-icon class="mr-2">{{ snackbarIcon }}</v-icon>
+      <v-icon class="mr-2" :icon="snackbarIcon" />
       {{ snackbarMsg }}
     </v-snackbar>
   </div>
 </template>
 
 <script setup lang="ts">
+import {
+  mdiHistory,
+  mdiFilterVariant,
+  mdiCalendarStart,
+  mdiCalendarEnd,
+  mdiCalendar,
+  mdiPencilOutline,
+  mdiDeleteOutline,
+  mdiDeleteSweep,
+  mdiAlertCircle,
+  mdiCheckCircle,
+  mdiCheckDecagram,
+  mdiMagnifyClose,
+  mdiBookRemove,
+  mdiRunFast,
+} from '@mdi/js'
 import {
   MATERIAS,
   CORES_MATERIAS,
@@ -244,7 +260,7 @@ const sessaoParaExcluir = ref<Session | null>(null)
 const snackbar = ref(false)
 const snackbarMsg = ref('')
 const snackbarColor = ref('success')
-const snackbarIcon = ref('mdi-check-circle')
+const snackbarIcon = ref(mdiCheckCircle)
 
 const headers = [
   { title: 'Data', key: 'date', sortable: true },
@@ -319,11 +335,12 @@ function corTaxa(item: Session): string {
   return 'error'
 }
 
-function iconeMotivo(motivo: MotivoErro): string {
+function iconeMotivo(motivo: MotivoErro | null): string {
+  if (motivo === null) return mdiCheckDecagram
   const icones: Record<MotivoErro, string> = {
-    'Errei na Interpretação': 'mdi-magnify-close',
-    'Faltou Conteúdo': 'mdi-book-remove',
-    'Fiz Depressa': 'mdi-run-fast',
+    'Errei na Interpretação': mdiMagnifyClose,
+    'Faltou Conteúdo': mdiBookRemove,
+    'Fiz Depressa': mdiRunFast,
   }
   return icones[motivo]
 }
@@ -342,13 +359,13 @@ function excluirSessao() {
   store.deleteSession(sessaoParaExcluir.value.id)
   dialogExcluir.value = false
   sessaoParaExcluir.value = null
-  mostrarSnackbar('Sessão excluída com sucesso!', 'success', 'mdi-check-circle')
+  mostrarSnackbar('Sessão excluída com sucesso!', 'success', mdiCheckCircle)
 }
 
 function limparTudo() {
   store.clearAllSessions()
   dialogLimpar.value = false
-  mostrarSnackbar('Todos os dados foram removidos!', 'warning', 'mdi-delete-sweep')
+  mostrarSnackbar('Todos os dados foram removidos!', 'warning', mdiDeleteSweep)
 }
 
 function mostrarSnackbar(msg: string, color: string, icon: string) {

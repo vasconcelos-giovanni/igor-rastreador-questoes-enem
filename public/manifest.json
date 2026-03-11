@@ -1,0 +1,18 @@
+{
+  "name": "Equilibra Que Dá!",
+  "short_name": "Equilibra",
+  "description": "Rastreador de desempenho para o ENEM - IFRN",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#356854",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
