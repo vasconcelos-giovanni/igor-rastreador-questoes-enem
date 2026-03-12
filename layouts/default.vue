@@ -60,8 +60,9 @@
           id="nav-configuracoes"
           :prepend-icon="mdiCogOutline"
           title="Configurações"
+          to="/configuracoes"
           rounded="lg"
-          @click="dialogConfiguracoes = true"
+          active-color="primary"
         />
       </v-list>
     </v-navigation-drawer>
@@ -107,7 +108,7 @@
       </v-footer>
     </v-main>
 
-    <v-dialog v-model="dialogConfiguracoes" max-width="440" persistent>
+    <v-dialog v-model="dialogConfiguracoes" :max-width="smAndDown ? undefined : '440'" :fullscreen="smAndDown" persistent>
       <v-card>
         <v-card-title class="d-flex align-center pt-5 px-6">
           <v-icon class="mr-2" color="primary" :icon="mdiCogOutline" />
@@ -184,6 +185,27 @@
           <v-divider class="my-4" />
 
           <div class="text-subtitle-2 text-medium-emphasis mb-3">
+            <v-icon size="16" class="mr-1" :icon="mdiCloudRefreshOutline" />
+            Sincronização Automática
+          </div>
+
+          <v-switch
+            v-model="autoSync"
+            color="primary"
+            density="compact"
+            hide-details
+            class="mb-1"
+            label="Sincronizar automaticamente na nuvem"
+          />
+          <p class="text-caption text-medium-emphasis mb-0">
+            {{ syncState.isConnected
+              ? `Conectado${syncState.userAddress ? ' como ' + syncState.userAddress : ''}`
+              : 'Configure o provedor em Configurações.' }}
+          </p>
+
+          <v-divider class="my-4" />
+
+          <div class="text-subtitle-2 text-medium-emphasis mb-3">
             <v-icon size="16" class="mr-1" :icon="mdiSchoolOutline" />
             Tutorial
           </div>
@@ -245,12 +267,15 @@ import {
   mdiSchool, mdiViewDashboard, mdiPlusCircleOutline, mdiHistory,
   mdiCogOutline, mdiHelpCircleOutline, mdiTarget, mdiCalendarToday,
   mdiCalendarWeek, mdiDatabaseOutline, mdiExportVariant, mdiImport,
-  mdiAlertOutline, mdiInformationOutline, mdiSchoolOutline
+  mdiAlertOutline, mdiInformationOutline, mdiSchoolOutline, mdiCloudRefreshOutline
 } from '@mdi/js'
 
 const { mdAndUp, smAndDown } = useDisplay()
-const drawer = ref(false)
+// Shared via useState so pages/configuracoes.vue can open the drawer for the tour
+const drawer = useState('drawer-open', () => false)
 const dialogConfiguracoes = ref(false)
+
+const { syncState, autoSync } = useSync()
 
 const { iniciarTour, verificarOnboarding } = useOnboarding()
 verificarOnboarding({ openDrawer: () => { drawer.value = true } })

@@ -14,6 +14,10 @@
 - 📊 **Dashboard analítico** com KPIs, gráficos de barras, doughnut, linha e radar.
 - 🎯 **Metas diária e semanal** configuráveis pelo usuário.
 - 💾 **Persistência local** via `localStorage` — os dados ficam no dispositivo do aluno, sem necessidade de conta.
+- ☁️ **Sincronização Cloud via Google Drive** — o aluno usa sua conta Google para salvar e recuperar o progresso entre dispositivos, sem criar conta adicional. Os dados são armazenados em uma pasta isolada e privada (`appDataFolder`) no Google Drive do próprio aluno. Nenhum dado transita por servidores do projeto (**LGPD**).
+  - Sincronização automática com **debounce de 5 s** para otimização de banda.
+  - Sincronização manual disponível na página de Configurações.
+  - Merge inteligente: sessões são unidas por ID; `localStorage` é sempre a fonte da verdade primária.
 - 🌐 PWA (Progressive Web App) — instalável no celular para uso como aplicativo nativo.
 - 🌐 **100% client-side** — nenhuma requisição para backend externo.
 - 🎨 **Tema escuro customizado** (`enemDark`) integrado ao Vuetify 3.
@@ -31,6 +35,7 @@
 | npm | `^10.x` |
 | jq | `^1.6` (necessário para o `release.sh`) |
 | driver.js | `^1.4.0` (tour de onboarding) |
+| remotestoragejs | removido em v1.3.0 — substituído por Google Identity Services nativo |
 
 > O arquivo [`.tool-versions`](.tool-versions) permite gerenciar a versão do Node.js com [asdf](https://asdf-vm.com/) ou [mise](https://mise.jdx.dev/).
 
@@ -99,10 +104,11 @@ export default defineEventHandler(async (event) => {
 |---|---|---|
 | **Tipos e Schemas** | `types/index.ts` | Enums, schemas Zod, tipos TypeScript |
 | **Estado Global** | `stores/study.ts` | Pinia store com persistência em `localStorage` |
+| **Sincronização Cloud** | `composables/useSync.ts` | remoteStorage: upload, download, merge offline-first |
 | **Componentes** | `components/` | Elementos de interface desacoplados e reutilizáveis |
 | **Lógica de Negócio** | `composables/useStatistics.ts` | Cálculos de estatísticas e datasets para gráficos |
 | **Interface (Páginas)** | `pages/`, `layouts/` | Telas orchestradoras da aplicação |
-| **Plugins** | `plugins/` | Inicialização de Vuetify, Pinia e Chart.js |
+| **Plugins** | `plugins/` | Inicialização de Vuetify, Pinia, Chart.js e SyncStudy |
 
 ### Tipos e Validação (Zod)
 
@@ -128,6 +134,116 @@ export const SessionSchema = z.object({
     }
 })
 ```
+
+---
+
+### Sincronização Cloud — Arquitetura Offline-First
+
+A sincronização é uma **camada opcional** sobre o `localStorage`. O fluxo respeita o **princípio offline-first**:
+
+```
+localStorage  ←──(fonte da verdade)──→  Google Drive (appDataFolder)
+      │                                        │
+      │  uploadData(data)  ──────────────────► │
+      │                                        │
+      │◄────────────────── downloadAndMerge()  │
+      │  (merge por ID: local ganha conflito)  │
+```
+
+**Fluxo de merge (`_mergeSessions`):**
+1. Monta um `Map<id, Session>` com todas as sessões remotas.
+2. Sobrescreve com as sessões locais (local ganha em caso de conflito de ID).
+3. Sessões exclusivas do remoto são incorporadas (recuperação de dados de outros dispositivos).
+
+**Debounce de 5 s:** O plugin `syncStudy.client.ts` subscreve ao `$subscribe` do Pinia e agenda o upload com 5 segundos de atraso. Edições rápidas em sequência resultam em um único upload.
+
+**Falha silenciosa:** Se o Google Drive ou a autenticação falhar, a store continua operando normalmente a partir do `localStorage`. O erro é exibido apenas na página de Configurações.
+
+**Timeout de segurança {
+  "error": {
+    "code": 403,
+    "message": "Google Drive API has not been used in project 445002403787 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=445002403787 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.",
+    "errors": [
+      {
+        "message": "Google Drive API has not been used in project 445002403787 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=445002403787 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.",
+        "domain": "usageLimits",
+        "reason": "accessNotConfigured",
+        "extendedHelp": "https://console.developers.google.com"
+      }
+    ],
+    "status": "PERMISSION_DENIED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "SERVICE_DISABLED",
+        "domain": "googleapis.com",
+        "metadata": {
+          "serviceTitle": "Google Drive API",
+          "containerInfo": "445002403787",
+          "service": "drive.googleapis.com",
+          "activationUrl": "https://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=445002403787",
+          "consumer": "projects/445002403787"
+        }
+      },
+      {
+        "@type": "type.googleapis.com/google.rpc.LocalizedMessage",
+        "locale": "en-US",
+        "message": "Google Drive API has not been used in project 445002403787 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=445002403787 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."
+      },
+      {
+        "@type": "type.googleapis.com/google.rpc.Help",
+        "links": [
+          {
+            "description": "Google developers console API activation",
+            "url": "https://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=445002403787"
+          }
+        ]
+      }
+    ]
+  }
+}
+(15 s):** A função `connect()` dispara um `setTimeout` de 15 segundos após chamar `requestAccessToken()`. Se o popup OAuth não resolver neste intervalo (popup bloqueado, rede indisponível), o estado `isConnecting` é resetado e uma mensagem de erro acionável é exibida ao usuário.
+
+#### Google Drive API Nativa
+
+A sincronização é implementada diretamente contra a **Google Drive REST API v3** usando o SDK oficial **Google Identity Services (GIS)**, sem bibliotecas de abstração intermediárias.
+
+| Aspecto | Detalhe |
+|---|---|
+| **Autenticação** | Google Identity Services (`https://accounts.google.com/gsi/client`) — OAuth 2.0 via popup, sem redirecionamento de página |
+| **Token** | `access_token` armazenado em `sessionStorage` (expira ao fechar a aba); expiry epoch rastreado para evitar uso de tokens válidos quase-expirados |
+| **Escopo** | `https://www.googleapis.com/auth/drive.appdata` — acesso exclusivo à pasta oculta do app, sem tocar nos arquivos pessoais |
+| **Upload** | Multipart POST na criação; PATCH mídia na atualização; re-criação automática se o arquivo for deletado externamente (404 → POST) |
+| **Download** | GET com `alt=media` para obter o conteúdo diretamente, após `list` para resolver o ID do arquivo |
+| **Token Expiry** | Respostas 401 da Drive API invocam `_handleAuthExpiry()`, que limpa o token e pede nova autenticação |
+
+```ts
+// Inicialização (composables/useSync.ts)
+const tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/drive.appdata',
+    callback: (tokenResponse) => { /* armazena token e atualiza syncState */ },
+    error_callback: (err) => { /* popup fechado, bloqueado, etc. */ },
+})
+```
+
+#### Soberania de Dados (LGPD)
+
+- O único nó que processa os dados é o servidor escolhido pelo próprio usuário.
+- O projeto não tem acesso a nenhum token OAuth, nenhum dado de sessão, nenhum metadado de uso.
+- A conexão é 100% opcional; remover a funcionalidade do ar não afeta nenhum dado de nenhum aluno.
+- O token OAuth fica em `localStorage` do dispositivo do aluno — não em cookies, não em banco de dados externo.
+
+#### Privacidade no Google Drive (`drive.appdata`)
+
+Quando o aluno conecta com uma conta Google, a integração nativa com o Google Drive utiliza exclusivamente o escopo **`drive.appdata`**, que dá acesso apenas a uma pasta oculta e isolada criada especificamente para este aplicativo (`appDataFolder`). Isso garante que:
+
+- O aplicativo **não pode ler, modificar ou excluir** nenhum arquivo pessoal do usuário no Google Drive.
+- A pasta do aplicativo fica invisível no Google Drive normal do aluno — não aparece na listagem de arquivos.
+- O aluno pode revogar o acesso a qualquer momento em [Configurações da Conta Google → Aplicativos de terceiros](https://myaccount.google.com/permissions).
+- O projeto não armazena, não transita e não tem acesso a nenhum token de autenticação Google.
+
+> **Para produtores do projeto:** O Client ID OAuth está em `composables/useSync.ts` (constante `CLIENT_ID`). Ele deve ser gerado no [Google Cloud Console](https://console.cloud.google.com/) com escopo restrito a `https://www.googleapis.com/auth/drive.appdata` e as origens autorizadas configuradas para o domínio de produção.
 
 ---
 
@@ -320,6 +436,7 @@ O preset `netlify` do Nitro converte Server Routes em **Netlify Functions**. Par
 | `/` | `pages/index.vue` | Dashboard com KPIs, gráficos e metas |
 | `/registrar` | `pages/registrar.vue` | Container para registro rápido |
 | `/historico` | `pages/historico.vue` | Listagem com edição/duplicação via modais |
+| `/configuracoes` | `pages/configuracoes.vue` | Sincronização cloud, metas, backup e tutorial |
 | `/ajuda-backup` | `pages/ajuda-backup.vue` | Guia de exportação e importação de dados |
 
 ---

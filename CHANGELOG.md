@@ -7,6 +7,42 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-03-11
+
+### Added
+
+- **Sincronização Cloud com Google Drive:** Integração nativa com a Google Drive REST API v3 via `composables/useSync.ts`, usando Google Identity Services (GIS) para autenticação OAuth 2.0 com popup. Sincronização automática e manual, armazenamento isolado na `appDataFolder` do Google Drive do próprio aluno.
+- **Backend nativo Google Drive (GIS):** Substituição completa da biblioteca `remotestoragejs` pela **Google Drive REST API v3** com autenticação via **Google Identity Services (GIS)**. O usuário usa seu Gmail diretamente, sem criar conta adicional. O escopo é `drive.appdata` — acesso restrito à pasta oculta do aplicativo, sem tocar nos arquivos pessoais.
+- **Página de Configurações (`/configuracoes`):** Nova página dedicada com seções de sincronização (no topo), metas de estudo, backup de dados e tutorial — substituindo a navegação exclusiva via modal.
+- **Botão de Sincronização Manual (`mdiCloudSync`):** Posicionado no topo da página de Configurações para acionar o ciclo completo de download → merge → upload sob demanda.
+- **Toggle de Sincronização Automática (`v-switch`):** Disponível tanto na página de Configurações quanto no modal de ajustes rápidos. Utiliza debounce de 5 segundos para evitar uploads em rajada.
+- **Status de Conexão:** Chip de estado (Conectado / Desconectado) e exibição do provedor (RemoteStorage, Dropbox, Google Drive) diretamente na página de Configurações.
+- **Plugin `syncStudy.client.ts`:** Inicializa o RemoteStorage no carregamento da aplicação (permitindo auto-reconexão de sessões OAuth anteriores) e subscreve às mutações do Pinia para disparar uploads com debounce.
+- **Modal de Configurações Rápidas fullscreen no mobile:** O modal existente em `layouts/default.vue` agora ocupa a tela inteira em dispositivos `smAndDown`.
+
+### Changed
+
+- **Navegação — item "Configurações":** O item do drawer que abria o modal agora navega para a página `/configuracoes`, tornando a experiência de configuração mais completa e consistente.
+- **Drawer compartilhado via `useState`:** A ref de abertura do drawer foi migrada para `useState('drawer-open')`, permitindo que a página de Configurações acione o tour de onboarding sem prop-drilling.
+
+### Architecture
+
+- **Offline-First com Persistência em Nuvem Descentralizada:** O `localStorage` continua sendo a fonte da verdade primária. O remoteStorage é uma camada de sincronização opcional que falha silenciosamente sem impactar a experiência local.
+- **Merge de Sessões por ID:** A função `_mergeSessions` realiza uma união dos conjuntos local e remoto, preservando dados exclusivos de cada origem e priorizando a versão local em caso de conflito de ID.
+- **Soberania de Dados (LGPD):** O usuário escolhe o provedor; nenhum dado transita por infraestrutura do projeto. A conexão é completamente opcional.
+- **Debouncing de 5 s:** Otimização de banda — múltiplas edições em sequência resultam em um único upload ao servidor remoto.
+
+### Fixed
+
+- **Timeout de 15 s no handshake OAuth (`useSync.ts`):** Adicionado `setTimeout` de 15 segundos na função `connect()` para evitar travamento infinito do estado de carregamento ao tentar conectar (popup bloqueado, rede indisponível, domínio incompatible). O timer é cancelado automaticamente quando o evento `connected` ou `error` do RemoteStorage dispara.
+- **Reset de `isConnecting` no evento `error`:** O estado de carregamento do botão de conexão agora é sempre resetado quando o provider retorna um erro, eliminando o spinner infinito em falhas síncronas e assíncronas.
+
+### UX
+
+- **Linguagem de onboarding simplificada:** O campo de endereço e o fluxo de conexão da página de Configurações foram reformulados para usuários não-técnicos, com aviso explícito de que e-mails comuns (Gmail/Hotmail) são incompatíveis.
+- **Link de suporte para registro no 5apps:** Adicionado botão de destaque com ícone `mdiOpenInNew` e link direto para criação de conta gratuita em `https://5apps.com/storage/signup`, exibido abaixo do campo de endereço quando o usuário está desconectado.
+- **Aviso de privacidade contextual:** Incluído `v-alert` com linguagem acolhedora sobre privacidade e portabilidade dos dados antes do formulário de conexão, sem uso de termos técnicos.
+
 ## [1.2.0] - 2026-03-11
 
 ### Added
